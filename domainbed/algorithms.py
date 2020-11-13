@@ -150,6 +150,7 @@ class AbstractDANN(Algorithm):
             betas=(self.hparams['beta1'], 0.9))
 
     def update(self, minibatches):
+        device = "cuda" if minibatches[0][0].is_cuda else "cpu"
         self.update_count += 1
         all_x = torch.cat([x for x, y in minibatches])
         all_y = torch.cat([y for x, y in minibatches])
@@ -160,7 +161,7 @@ class AbstractDANN(Algorithm):
             disc_input = all_z
         disc_out = self.discriminator(disc_input)
         disc_labels = torch.cat([
-            torch.full((x.shape[0], ), i, dtype=torch.int64, device='cuda')
+            torch.full((x.shape[0], ), i, dtype=torch.int64, device=device)
             for i, (x, y) in enumerate(minibatches)
         ])
 
