@@ -251,3 +251,10 @@ class SVIRO(MultipleEnvironmentImageFolder):
     def __init__(self, root, test_envs, hparams):
         self.dir = os.path.join(root, "sviro/")
         super().__init__(self.dir, test_envs, hparams['data_augmentation'], hparams)
+
+class Daimler(MultipleEnvironmentImageFolder):
+    CHECKPOINT_FREQ = 300
+    ENVIRONMENT_NAMES = ["synthetic", "dealership", "used"]
+    def __init__(self, root, test_envs, hparams):
+        self.dir = os.path.join(root, "daimler/")
+        super().__init__(self.dir, test_envs, hparams['data_augmentation'], hparams)
