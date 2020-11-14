@@ -1,2 +1,6 @@
 __pycache__
 domainbed/facebook.py
+data/
+.DS_Store
+*.pyc
+train_output/
