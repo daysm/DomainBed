@@ -25,6 +25,7 @@ DATASETS = [
     "TerraIncognita",
     "DomainNet",
     "SVIRO",
+    "Daimler"
 ]
 
 def get_dataset_class(dataset_name):
@@ -254,7 +255,7 @@ class SVIRO(MultipleEnvironmentImageFolder):
 
 class Daimler(MultipleEnvironmentImageFolder):
     CHECKPOINT_FREQ = 300
-    ENVIRONMENT_NAMES = ["synthetic", "dealership", "used"]
+    ENVIRONMENTS = ["synthetic", "dealership", "used"]
     def __init__(self, root, test_envs, hparams):
         self.dir = os.path.join(root, "Daimler/")
         super().__init__(self.dir, test_envs, hparams['data_augmentation'], hparams)
