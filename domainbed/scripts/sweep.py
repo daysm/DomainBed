@@ -157,12 +157,12 @@ if __name__ == "__main__":
 
     for job in jobs:
         print(job)
-    print("{} jobs: {} done, {} incomplete, {} not launched.".format(
-        len(jobs),
-        len([j for j in jobs if j.state == Job.DONE]),
-        len([j for j in jobs if j.state == Job.INCOMPLETE]),
-        len([j for j in jobs if j.state == Job.NOT_LAUNCHED]))
-    )
+        print("{} jobs: {} done, {} incomplete, {} not launched.".format(
+            len(jobs),
+            len([j for j in jobs if j.state == Job.DONE]),
+            len([j for j in jobs if j.state == Job.INCOMPLETE]),
+            len([j for j in jobs if j.state == Job.NOT_LAUNCHED]))
+        )
 
     if args.command == 'launch':
         to_launch = [j for j in jobs if j.state == Job.NOT_LAUNCHED]
