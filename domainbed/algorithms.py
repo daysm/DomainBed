@@ -117,7 +117,7 @@ class AbstractDANN(Algorithm):
     """Domain-Adversarial Neural Networks (abstract class)"""
 
     def __init__(self, input_shape, num_classes, num_domains,
-                 hparams, conditional, class_balance):
+                 hparams, conditional, class_balance, uda):
 
         super(AbstractDANN, self).__init__(input_shape, num_classes, num_domains,
                                   hparams)
@@ -125,12 +125,16 @@ class AbstractDANN(Algorithm):
         self.register_buffer('update_count', torch.tensor([0]))
         self.conditional = conditional
         self.class_balance = class_balance
+        self.uda = uda
+        self.d_step_test_domain = True  # Toggle
+
 
         # Algorithms
         self.featurizer = networks.Featurizer(input_shape, self.hparams)
         self.classifier = nn.Linear(self.featurizer.n_outputs, num_classes)
         self.discriminator = networks.MLP(self.featurizer.n_outputs,
             num_domains, self.hparams)
+
         self.class_embeddings = nn.Embedding(num_classes,
             self.featurizer.n_outputs)
 
@@ -149,23 +153,47 @@ class AbstractDANN(Algorithm):
             weight_decay=self.hparams['weight_decay_g'],
             betas=(self.hparams['beta1'], 0.9))
 
-    def update(self, minibatches):
+    def update(self, minibatches, minibatches_test=None):
         device = "cuda" if minibatches[0][0].is_cuda else "cpu"
         self.update_count += 1
         all_x = torch.cat([x for x, y in minibatches])
+        all_test_x = torch.cat([x for x, y in minibatches_test])
         all_y = torch.cat([y for x, y in minibatches])
         all_z = self.featurizer(all_x)
-        if self.conditional:
-            disc_input = all_z + self.class_embeddings(all_y)
-        else:
-            disc_input = all_z
-        disc_out = self.discriminator(disc_input)
-        disc_labels = torch.cat([
-            torch.full((x.shape[0], ), i, dtype=torch.int64, device=device)
-            for i, (x, y) in enumerate(minibatches)
-        ])
+        all_test_z = self.featurizer(all_test_x)
 
-        if self.class_balance:
+
+
+        if self.uda and self.d_step_test_domain:
+            disc_input = all_test_z
+            disc_out = self.discriminator(disc_input)
+            disc_labels = torch.cat([
+                torch.full((x.shape[0], ), i+len(minibatches), dtype=torch.int64, device=device)
+                for i, (x, y) in enumerate(minibatches_test)
+            ])
+            print(disc_labels.tolist())
+            disc_softmax = F.softmax(disc_out, dim=1)
+            disc_predictions = torch.argmax(disc_softmax, dim=1)
+            print(disc_predictions.tolist())
+            self.d_step_test_domain = False
+        else:
+            if self.conditional:
+                disc_input = all_z + self.class_embeddings(all_y)
+            else:
+                disc_input = all_z
+            disc_out = self.discriminator(disc_input)
+            disc_labels = torch.cat([
+                torch.full((x.shape[0], ), i, dtype=torch.int64, device=device)
+                for i, (x, y) in enumerate(minibatches)
+            ])
+            print(disc_labels.tolist())
+            disc_softmax = F.softmax(disc_out, dim=1)
+            disc_predictions = torch.argmax(disc_softmax, dim=1)
+            print(disc_predictions.tolist())
+            if self.uda:
+                self.d_step_test_domain = True
+
+        if self.class_balance and not self.d_step_test_domain:
             y_counts = F.one_hot(all_y).sum(dim=0)
             weights = 1. / (y_counts[all_y] * y_counts.shape[0]).float()
             disc_loss = F.cross_entropy(disc_out, disc_labels, reduction='none')
@@ -181,7 +209,6 @@ class AbstractDANN(Algorithm):
 
         d_steps_per_g = self.hparams['d_steps_per_g_step']
         if (self.update_count.item() % (1+d_steps_per_g) < d_steps_per_g):
-
             self.disc_opt.zero_grad()
             disc_loss.backward()
             self.disc_opt.step()
@@ -204,15 +231,20 @@ class DANN(AbstractDANN):
     """Unconditional DANN"""
     def __init__(self, input_shape, num_classes, num_domains, hparams):
         super(DANN, self).__init__(input_shape, num_classes, num_domains,
-            hparams, conditional=False, class_balance=False)
+            hparams, conditional=False, class_balance=False, uda=False)
 
 
 class CDANN(AbstractDANN):
     """Conditional DANN"""
     def __init__(self, input_shape, num_classes, num_domains, hparams):
         super(CDANN, self).__init__(input_shape, num_classes, num_domains,
-            hparams, conditional=True, class_balance=True)
+            hparams, conditional=True, class_balance=True, uda=False)
 
+class DANNUDA(AbstractDANN):
+    """Unconditional DANN"""
+    def __init__(self, input_shape, num_classes, num_domains, hparams):
+        super(DANNUDA, self).__init__(input_shape, num_classes, num_domains,
+            hparams, conditional=False, class_balance=False, uda=True)
 
 class IRM(ERM):
     """Invariant Risk Minimization"""

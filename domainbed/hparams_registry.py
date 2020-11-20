@@ -34,7 +34,7 @@ def _hparams(algorithm, dataset, random_seed):
     # Algorithm-specific hparam definitions. Each block of code below
     # corresponds to exactly one algorithm.
 
-    if algorithm in ['DANN', 'CDANN']:
+    if algorithm in ['DANN', 'CDANN', 'DANNUDA']:
         _hparam('lambda', 1.0, lambda r: 10**r.uniform(-2, 2))
         _hparam('weight_decay_d', 0., lambda r: 10**r.uniform(-6, -2))
         _hparam('d_steps_per_g_step', 1, lambda r: int(2**r.uniform(0, 3)))
@@ -100,21 +100,21 @@ def _hparams(algorithm, dataset, random_seed):
         _hparam('batch_size', 32, lambda r: int(2**r.uniform(3, 5.5)) )
 
 
-    if algorithm in ['DANN', 'CDANN'] and dataset in SMALL_IMAGES:
+    if algorithm in ['DANN', 'CDANN', 'DANNUDA'] and dataset in SMALL_IMAGES:
         _hparam('lr_g', 1e-3, lambda r: 10**r.uniform(-4.5, -2.5) )
-    elif algorithm in ['DANN', 'CDANN']:
+    elif algorithm in ['DANN', 'CDANN', 'DANNUDA']:
         _hparam('lr_g', 5e-5, lambda r: 10**r.uniform(-5, -3.5) )
 
 
-    if algorithm in ['DANN', 'CDANN'] and dataset in SMALL_IMAGES:
+    if algorithm in ['DANN', 'CDANN', 'DANNUDA'] and dataset in SMALL_IMAGES:
         _hparam('lr_d', 1e-3, lambda r: 10**r.uniform(-4.5, -2.5) )
-    elif algorithm in ['DANN', 'CDANN']:
+    elif algorithm in ['DANN', 'CDANN', 'DANNUDA']:
         _hparam('lr_d', 5e-5, lambda r: 10**r.uniform(-5, -3.5) )
 
 
-    if algorithm in ['DANN', 'CDANN'] and dataset in SMALL_IMAGES:
+    if algorithm in ['DANN', 'CDANN', 'DANNUDA'] and dataset in SMALL_IMAGES:
         _hparam('weight_decay_g', 0., lambda r: 0.)
-    elif algorithm in ['DANN', 'CDANN']:
+    elif algorithm in ['DANN', 'CDANN', 'DANNUDA']:
         _hparam('weight_decay_g', 0., lambda r: 10**r.uniform(-6, -2) )
 
 

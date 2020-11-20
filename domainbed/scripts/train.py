@@ -12,6 +12,7 @@ import uuid
 import numpy as np
 import PIL
 import torch
+from torch.utils import data
 import torchvision
 import torch.utils.data
 
@@ -26,6 +27,7 @@ if __name__ == "__main__":
     parser.add_argument('--data_dir', type=str)
     parser.add_argument('--dataset', type=str, default="RotatedMNIST")
     parser.add_argument('--algorithm', type=str, default="ERM")
+    parser.add_argument('--uda', action='store_true')
     parser.add_argument('--hparams', type=str,
         help='JSON-serialized hparams dict')
     parser.add_argument('--hparams_seed', type=int, default=0,
@@ -120,6 +122,15 @@ if __name__ == "__main__":
         for i, (env, env_weights) in enumerate(in_splits)
         if i not in args.test_envs]
 
+    # For UDA
+    test_loaders = [InfiniteDataLoader(
+        dataset=env,
+        weights=env_weights,
+        batch_size=hparams['batch_size'],
+        num_workers=dataset.N_WORKERS)
+        for i, (env, env_weights) in enumerate(in_splits)
+        if i in args.test_envs]
+
     eval_loaders = [FastDataLoader(
         dataset=env,
         batch_size=64,
@@ -131,9 +142,15 @@ if __name__ == "__main__":
     eval_loader_names += ['env{}_out'.format(i)
         for i in range(len(out_splits))]
 
+
+    # UDA
+    if args.algorithm in ['DANNUDA']:
+        num_domains = len(dataset)
+    else:
+        num_domains = len(dataset) - len(args.test_envs)
     algorithm_class = algorithms.get_algorithm_class(args.algorithm)
     algorithm = algorithm_class(dataset.input_shape, dataset.num_classes,
-        len(dataset) - len(args.test_envs), hparams)
+        num_domains, hparams)
 
     if algorithm_dict is not None:
         algorithm.load_state_dict(algorithm_dict)
@@ -141,6 +158,7 @@ if __name__ == "__main__":
     algorithm.to(device)
 
     train_minibatches_iterator = zip(*train_loaders)
+    test_minibatches_iterator = zip(*test_loaders)
     checkpoint_vals = collections.defaultdict(lambda: [])
 
     steps_per_epoch = min([len(env)/hparams['batch_size'] for env,_ in in_splits])
@@ -153,7 +171,9 @@ if __name__ == "__main__":
         step_start_time = time.time()
         minibatches_device = [(x.to(device), y.to(device))
             for x,y in next(train_minibatches_iterator)]
-        step_vals = algorithm.update(minibatches_device)
+        minibatches_test_device = [(x.to(device), y.to(device))
+            for x,y in next(test_minibatches_iterator)]
+        step_vals = algorithm.update(minibatches_device, minibatches_test_device)
         checkpoint_vals['step_time'].append(time.time() - step_start_time)
 
         for key, val in step_vals.items():
@@ -168,10 +188,10 @@ if __name__ == "__main__":
             for key, val in checkpoint_vals.items():
                 results[key] = np.mean(val)
 
-            evals = zip(eval_loader_names, eval_loaders, eval_weights)
-            for name, loader, weights in evals:
-                acc = misc.accuracy(algorithm, loader, weights, device)
-                results[name+'_acc'] = acc
+            # evals = zip(eval_loader_names, eval_loaders, eval_weights)
+            # for name, loader, weights in evals:
+            #     acc = misc.accuracy(algorithm, loader, weights, device)
+            #     results[name+'_acc'] = acc
 
             results_keys = sorted(results.keys())
             if results_keys != last_results_keys:
@@ -180,18 +200,18 @@ if __name__ == "__main__":
             misc.print_row([results[key] for key in results_keys],
                 colwidth=12)
 
-            results.update({
-                'hparams': hparams,
-                'args': vars(args)    
-            })
+            # results.update({
+            #     'hparams': hparams,
+            #     'args': vars(args)    
+            # })
 
-            epochs_path = os.path.join(args.output_dir, 'results.jsonl')
-            with open(epochs_path, 'a') as f:
-                f.write(json.dumps(results, sort_keys=True) + "\n")
+            # epochs_path = os.path.join(args.output_dir, 'results.jsonl')
+            # with open(epochs_path, 'a') as f:
+            #     f.write(json.dumps(results, sort_keys=True) + "\n")
 
-            algorithm_dict = algorithm.state_dict()
-            start_step = step + 1
-            checkpoint_vals = collections.defaultdict(lambda: [])
+            # algorithm_dict = algorithm.state_dict()
+            # start_step = step + 1
+            # checkpoint_vals = collections.defaultdict(lambda: [])
 
     if not args.skip_model_save:
         save_dict = {

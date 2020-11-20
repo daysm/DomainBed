@@ -25,7 +25,8 @@ DATASETS = [
     "TerraIncognita",
     "DomainNet",
     "SVIRO",
-    "Daimler"
+    "Daimler",
+    "DaimlerDropOne"
 ]
 
 def get_dataset_class(dataset_name):
@@ -209,7 +210,7 @@ class MultipleEnvironmentImageFolder(MultipleDomainDataset):
             self.datasets.append(env_dataset)
 
         self.input_shape = (3, 224, 224,)
-        self.num_classes = len(self.datasets[-1].classes)
+        self.num_classes = max(len(self.datasets[i].classes) for i in range(len(self.datasets)))
 
 class VLCS(MultipleEnvironmentImageFolder):
     CHECKPOINT_FREQ = 300
@@ -255,7 +256,14 @@ class SVIRO(MultipleEnvironmentImageFolder):
 
 class Daimler(MultipleEnvironmentImageFolder):
     CHECKPOINT_FREQ = 300
-    ENVIRONMENTS = ["synthetic", "dealership", "used"]
+    ENVIRONMENTS = ["dealership", "synthetic", "used"]
     def __init__(self, root, test_envs, hparams):
         self.dir = os.path.join(root, "Daimler/")
+        super().__init__(self.dir, test_envs, hparams['data_augmentation'], hparams)
+
+class DaimlerDropOne(MultipleEnvironmentImageFolder):
+    CHECKPOINT_FREQ = 300
+    ENVIRONMENTS = ["dealership", "synthetic", "used"]
+    def __init__(self, root, test_envs, hparams):
+        self.dir = os.path.join(root, "DaimlerDrop1/")
         super().__init__(self.dir, test_envs, hparams['data_augmentation'], hparams)
