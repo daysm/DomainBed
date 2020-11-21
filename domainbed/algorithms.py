@@ -155,22 +155,26 @@ class AbstractDANN(Algorithm):
         device = "cuda" if minibatches[0][0].is_cuda else "cpu"
         self.update_count += 1
         all_x = torch.cat([x for x, y in minibatches])
-        all_test_x = torch.cat([x for x, y in minibatches_test])
         all_y = torch.cat([y for x, y in minibatches])
         all_z = self.featurizer(all_x)
-        all_test_z = self.featurizer(all_test_x)
-        all_z_and_all_test_z = torch.cat([all_z, all_test_z])
-
-        if self.conditional:
-            disc_input = all_z + self.class_embeddings(all_y)
-            disc_input = torch.cat([disc_input, all_test_z])
+        if minibatches_test is not None:
+            all_test_x = torch.cat([x for x, y in minibatches_test])
+            all_test_z = self.featurizer(all_test_x)
+            disc_input = torch.cat([all_z, all_test_z])
         else:
             disc_input = all_z
-        disc_input = all_z_and_all_test_z
+        
+        if self.conditional:
+            disc_input = all_z + self.class_embeddings(all_y)
+            if minibatches_test is not None:
+                disc_input = torch.cat([disc_input, all_test_z])
+
         disc_out = self.discriminator(disc_input)
+        if minibatches_test is not None:
+            minibatches = minibatches + minibatches_test
         disc_labels = torch.cat([
             torch.full((x.shape[0], ), i, dtype=torch.int64, device=device)
-            for i, (x, y) in enumerate(minibatches+minibatches_test)
+            for i, (x, y) in enumerate(minibatches)
         ])
         print(disc_labels.tolist())
         disc_softmax = F.softmax(disc_out, dim=1)

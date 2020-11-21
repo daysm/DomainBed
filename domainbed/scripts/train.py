@@ -167,13 +167,16 @@ if __name__ == "__main__":
     n_steps = args.steps or dataset.N_STEPS
     checkpoint_freq = args.checkpoint_freq or dataset.CHECKPOINT_FREQ
 
+    minibatches_test_device = None
     last_results_keys = None
     for step in range(start_step, n_steps):
         step_start_time = time.time()
         minibatches_device = [(x.to(device), y.to(device))
             for x,y in next(train_minibatches_iterator)]
-        minibatches_test_device = [(x.to(device), y.to(device))
-            for x,y in next(test_minibatches_iterator)]
+        if args.uda:
+            minibatches_test_device = [(x.to(device), y.to(device))
+                for x,y in next(test_minibatches_iterator)]
+
         step_vals = algorithm.update(minibatches_device, minibatches_test_device)
         checkpoint_vals['step_time'].append(time.time() - step_start_time)
 
