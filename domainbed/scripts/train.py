@@ -188,10 +188,10 @@ if __name__ == "__main__":
             for key, val in checkpoint_vals.items():
                 results[key] = np.mean(val)
 
-            # evals = zip(eval_loader_names, eval_loaders, eval_weights)
-            # for name, loader, weights in evals:
-            #     acc = misc.accuracy(algorithm, loader, weights, device)
-            #     results[name+'_acc'] = acc
+            evals = zip(eval_loader_names, eval_loaders, eval_weights)
+            for name, loader, weights in evals:
+                acc = misc.accuracy(algorithm, loader, weights, device)
+                results[name+'_acc'] = acc
 
             results_keys = sorted(results.keys())
             if results_keys != last_results_keys:
@@ -200,18 +200,18 @@ if __name__ == "__main__":
             misc.print_row([results[key] for key in results_keys],
                 colwidth=12)
 
-            # results.update({
-            #     'hparams': hparams,
-            #     'args': vars(args)    
-            # })
+            results.update({
+                'hparams': hparams,
+                'args': vars(args)    
+            })
 
-            # epochs_path = os.path.join(args.output_dir, 'results.jsonl')
-            # with open(epochs_path, 'a') as f:
-            #     f.write(json.dumps(results, sort_keys=True) + "\n")
+            epochs_path = os.path.join(args.output_dir, 'results.jsonl')
+            with open(epochs_path, 'a') as f:
+                f.write(json.dumps(results, sort_keys=True) + "\n")
 
-            # algorithm_dict = algorithm.state_dict()
-            # start_step = step + 1
-            # checkpoint_vals = collections.defaultdict(lambda: [])
+            algorithm_dict = algorithm.state_dict()
+            start_step = step + 1
+            checkpoint_vals = collections.defaultdict(lambda: [])
 
     if not args.skip_model_save:
         save_dict = {
