@@ -45,6 +45,7 @@ if __name__ == "__main__":
     parser.add_argument('--output_dir', type=str, default="train_output")
     parser.add_argument('--holdout_fraction', type=float, default=0.2)
     parser.add_argument('--skip_model_save', action='store_true')
+    parser.add_argument('--skip_acc_calc', action='store_true')
     args = parser.parse_args()
 
     # If we ever want to implement checkpointing, just persist these values
@@ -188,10 +189,24 @@ if __name__ == "__main__":
             for key, val in checkpoint_vals.items():
                 results[key] = np.mean(val)
 
-            evals = zip(eval_loader_names, eval_loaders, eval_weights)
-            for name, loader, weights in evals:
-                acc = misc.accuracy(algorithm, loader, weights, device)
-                results[name+'_acc'] = acc
+            if not args.skip_acc_calc:
+                evals = zip(eval_loader_names, eval_loaders, eval_weights)
+                for name, loader, weights in evals:
+                    acc = misc.accuracy(algorithm, loader, weights, device)
+                    results[name+'_acc'] = acc
+
+                results.update({
+                    'hparams': hparams,
+                    'args': vars(args)    
+                })
+
+                epochs_path = os.path.join(args.output_dir, 'results.jsonl')
+                with open(epochs_path, 'a') as f:
+                    f.write(json.dumps(results, sort_keys=True) + "\n")
+
+                algorithm_dict = algorithm.state_dict()
+                start_step = step + 1
+                checkpoint_vals = collections.defaultdict(lambda: [])
 
             results_keys = sorted(results.keys())
             if results_keys != last_results_keys:
@@ -199,19 +214,6 @@ if __name__ == "__main__":
                 last_results_keys = results_keys
             misc.print_row([results[key] for key in results_keys],
                 colwidth=12)
-
-            results.update({
-                'hparams': hparams,
-                'args': vars(args)    
-            })
-
-            epochs_path = os.path.join(args.output_dir, 'results.jsonl')
-            with open(epochs_path, 'a') as f:
-                f.write(json.dumps(results, sort_keys=True) + "\n")
-
-            algorithm_dict = algorithm.state_dict()
-            start_step = step + 1
-            checkpoint_vals = collections.defaultdict(lambda: [])
 
     if not args.skip_model_save:
         save_dict = {
