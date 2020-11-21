@@ -145,7 +145,7 @@ if __name__ == "__main__":
 
 
     # UDA
-    if args.algorithm in ['DANNUDA']:
+    if args.uda:
         num_domains = len(dataset)
     else:
         num_domains = len(dataset) - len(args.test_envs)
