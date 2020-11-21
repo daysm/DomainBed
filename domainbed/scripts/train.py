@@ -195,11 +195,6 @@ if __name__ == "__main__":
                     acc = misc.accuracy(algorithm, loader, weights, device)
                     results[name+'_acc'] = acc
 
-                results.update({
-                    'hparams': hparams,
-                    'args': vars(args)    
-                })
-
                 epochs_path = os.path.join(args.output_dir, 'results.jsonl')
                 with open(epochs_path, 'a') as f:
                     f.write(json.dumps(results, sort_keys=True) + "\n")
@@ -214,6 +209,11 @@ if __name__ == "__main__":
                 last_results_keys = results_keys
             misc.print_row([results[key] for key in results_keys],
                 colwidth=12)
+
+            results.update({
+                'hparams': hparams,
+                'args': vars(args)    
+            })
 
     if not args.skip_model_save:
         save_dict = {
