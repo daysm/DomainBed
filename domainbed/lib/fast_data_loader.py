@@ -50,7 +50,7 @@ class FastDataLoader:
     processes at every epoch."""
     def __init__(self, dataset, batch_size, num_workers):
         super().__init__()
-
+        self.dataset = dataset
         batch_sampler = torch.utils.data.BatchSampler(
             torch.utils.data.RandomSampler(dataset, replacement=False),
             batch_size=batch_size,

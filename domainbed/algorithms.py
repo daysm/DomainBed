@@ -73,7 +73,7 @@ class ERM(Algorithm):
             weight_decay=self.hparams['weight_decay']
         )
 
-    def update(self, minibatches):
+    def update(self, minibatches, minibatches_test=None):
         all_x = torch.cat([x for x,y in minibatches])
         all_y = torch.cat([y for x,y in minibatches])
         loss = F.cross_entropy(self.predict(all_x), all_y)
@@ -176,12 +176,8 @@ class AbstractDANN(Algorithm):
             torch.full((x.shape[0], ), i, dtype=torch.int64, device=device)
             for i, (x, y) in enumerate(minibatches)
         ])
-        print(disc_labels.tolist())
-        disc_softmax = F.softmax(disc_out, dim=1)
-        disc_predictions = torch.argmax(disc_softmax, dim=1)
-        print(disc_predictions.tolist())
 
-        if self.class_balance and not self.d_step_test_domain:
+        if self.class_balance:
             y_counts = F.one_hot(all_y).sum(dim=0)
             weights = 1. / (y_counts[all_y] * y_counts.shape[0]).float()
             disc_loss = F.cross_entropy(disc_out, disc_labels, reduction='none')
@@ -194,13 +190,15 @@ class AbstractDANN(Algorithm):
             [disc_input], create_graph=True)[0]
         grad_penalty = (input_grad**2).sum(dim=1).mean(dim=0)
         disc_loss += self.hparams['grad_penalty'] * grad_penalty
+        disc_correct = disc_softmax.argmax(1).eq(disc_labels).sum().float()
+        disc_acc = (disc_correct / disc_labels.shape[0]).item()
 
         d_steps_per_g = self.hparams['d_steps_per_g_step']
         if (self.update_count.item() % (1+d_steps_per_g) < d_steps_per_g):
             self.disc_opt.zero_grad()
             disc_loss.backward()
             self.disc_opt.step()
-            return {'disc_loss': disc_loss.item()}
+            return {'disc_loss': disc_loss.item(), 'disc_acc': disc_acc}
         else:
             all_preds = self.classifier(all_z)
             classifier_loss = F.cross_entropy(all_preds, all_y)

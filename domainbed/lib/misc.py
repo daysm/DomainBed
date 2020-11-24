@@ -12,6 +12,8 @@ from shutil import copyfile
 
 import numpy as np
 import torch
+import torch.nn.functional as F
+import sklearn.metrics
 import tqdm
 from collections import Counter
 
@@ -130,6 +132,26 @@ def accuracy(network, loader, weights, device):
     network.train()
 
     return correct / total
+
+def report(network, loader, device):
+    all_y_true = torch.empty(0)
+    all_y_pred = torch.empty(0)
+
+    network.eval()
+    with torch.no_grad():
+        for x, y in loader:
+            x = x.to(device)
+            y = y.to(device)
+            p = network.predict(x)
+            p_softmax = F.softmax(p, dim=1)
+            p_labels = torch.argmax(p_softmax, dim=1)
+            all_y_true = torch.cat([all_y_true, y])
+            all_y_pred = torch.cat([all_y_pred, p_labels])
+        confusion_matrix = sklearn.metrics.confusion_matrix(all_y_true, all_y_pred).tolist()
+        classification_report = sklearn.metrics.classification_report(all_y_true, all_y_pred, zero_division=0, output_dict=True)
+    network.train()
+    return {"confusion_matrix": confusion_matrix, "classification_report": classification_report}
+
 
 class Tee:
     def __init__(self, fname, mode="a"):

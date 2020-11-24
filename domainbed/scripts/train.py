@@ -46,12 +46,18 @@ if __name__ == "__main__":
     parser.add_argument('--holdout_fraction', type=float, default=0.2)
     parser.add_argument('--skip_model_save', action='store_true')
     parser.add_argument('--skip_acc_calc', action='store_true')
+    parser.add_argument('--load_checkpoint', action='store_true')
+    parser.add_argument('--report', action='store_true')
     args = parser.parse_args()
 
     # If we ever want to implement checkpointing, just persist these values
     # every once in a while, and then load them from disk here.
     start_step = 0
     algorithm_dict = None
+    if args.load_checkpoint:
+        load_dict = torch.load(os.path.join(args.output_dir, 'model.pkl'))
+        algorithm_dict = load_dict["model_dict"]
+        start_step = load_dict["model_start_step"]
 
     os.makedirs(args.output_dir, exist_ok=True)
     sys.stdout = misc.Tee(os.path.join(args.output_dir, 'out.txt'))
@@ -124,13 +130,24 @@ if __name__ == "__main__":
         if i not in args.test_envs]
 
     # For UDA
-    test_loaders = [InfiniteDataLoader(
+    test_in_loaders = [InfiniteDataLoader(
         dataset=env,
         weights=env_weights,
         batch_size=hparams['batch_size'],
         num_workers=dataset.N_WORKERS)
         for i, (env, env_weights) in enumerate(in_splits)
         if i in args.test_envs]
+
+    # For reporting
+    test_out_loaders = [InfiniteDataLoader(
+        dataset=env,
+        weights=env_weights,
+        batch_size=hparams['batch_size'],
+        num_workers=dataset.N_WORKERS)
+        for i, (env, env_weights) in enumerate(out_splits)
+        if i in args.test_envs]
+    test_out_loader_names = ['env{}_out'.format(i)
+        for i in range(len(out_splits)) if i in args.test_envs]
 
     eval_loaders = [FastDataLoader(
         dataset=env,
@@ -159,7 +176,7 @@ if __name__ == "__main__":
     algorithm.to(device)
 
     train_minibatches_iterator = zip(*train_loaders)
-    test_minibatches_iterator = zip(*test_loaders)
+    test_minibatches_iterator = zip(*test_in_loaders)
     checkpoint_vals = collections.defaultdict(lambda: [])
 
     steps_per_epoch = min([len(env)/hparams['batch_size'] for env,_ in in_splits])
@@ -198,14 +215,6 @@ if __name__ == "__main__":
                     acc = misc.accuracy(algorithm, loader, weights, device)
                     results[name+'_acc'] = acc
 
-                epochs_path = os.path.join(args.output_dir, 'results.jsonl')
-                with open(epochs_path, 'a') as f:
-                    f.write(json.dumps(results, sort_keys=True) + "\n")
-
-                algorithm_dict = algorithm.state_dict()
-                start_step = step + 1
-                checkpoint_vals = collections.defaultdict(lambda: [])
-
             results_keys = sorted(results.keys())
             if results_keys != last_results_keys:
                 misc.print_row(results_keys, colwidth=12)
@@ -213,18 +222,36 @@ if __name__ == "__main__":
             misc.print_row([results[key] for key in results_keys],
                 colwidth=12)
 
+            if args.report:
+                evals = zip(test_out_loader_names, test_out_loaders)
+                for name, loader in evals:
+                    report_dict = misc.report(algorithm, loader, device)
+                    results[name+'_confusion_matrix'] = report_dict["confusion_matrix"]
+                    results[name+'_classification_report'] = report_dict["classification_report"]
+                
+            epochs_path = os.path.join(args.output_dir, 'results.jsonl')
+            with open(epochs_path, 'a') as f:
+                f.write(json.dumps(results, sort_keys=True) + "\n")
+
+            algorithm_dict = algorithm.state_dict()
+            start_step = step + 1
+
+            checkpoint_vals = collections.defaultdict(lambda: [])
+
             results.update({
                 'hparams': hparams,
                 'args': vars(args)    
             })
+
 
     if not args.skip_model_save:
         save_dict = {
             "args": vars(args),
             "model_input_shape": dataset.input_shape,
             "model_num_classes": dataset.num_classes,
-            "model_num_domains": len(dataset) - len(args.test_envs),
+            "model_num_domains": num_domains,
             "model_hparams": hparams,
+            "model_start_step": start_step,
             "model_dict": algorithm.cpu().state_dict()
         }
 
