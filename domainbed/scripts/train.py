@@ -244,18 +244,18 @@ if __name__ == "__main__":
             })
 
 
-    if not args.skip_model_save:
-        save_dict = {
-            "args": vars(args),
-            "model_input_shape": dataset.input_shape,
-            "model_num_classes": dataset.num_classes,
-            "model_num_domains": num_domains,
-            "model_hparams": hparams,
-            "model_start_step": start_step,
-            "model_dict": algorithm.cpu().state_dict()
-        }
+            if not args.skip_model_save:
+                save_dict = {
+                    "args": vars(args),
+                    "model_input_shape": dataset.input_shape,
+                    "model_num_classes": dataset.num_classes,
+                    "model_num_domains": num_domains,
+                    "model_hparams": hparams,
+                    "model_start_step": start_step,
+                    "model_dict": algorithm.cpu().state_dict()
+                }
 
-        torch.save(save_dict, os.path.join(args.output_dir, "model.pkl"))
+                torch.save(save_dict, os.path.join(args.output_dir, "model.pkl"))
 
     with open(os.path.join(args.output_dir, 'done'), 'w') as f:
         f.write('done')
