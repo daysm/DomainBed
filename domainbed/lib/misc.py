@@ -18,10 +18,11 @@ import tqdm
 from collections import Counter
 
 
-def brier_score_loss(probs, targets, reduction='mean'):
-    num_classes = probs[0].size()[0]
-    targets = F.one_hot(targets, num_classes=num_classes)
-    loss = (probs - targets).pow(2).sum(1)
+def brier_score_loss(input, target, reduction='mean'):
+    num_classes = input[0].size()[0]
+    target = F.one_hot(target, num_classes=num_classes)
+    input_softmax = F.softmax(input, dim=1)
+    loss = (input_softmax - target).pow(2).sum(1)
     if reduction == 'mean':
         loss = loss.mean()
     return loss
