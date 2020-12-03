@@ -4,3 +4,5 @@ data/
 .DS_Store
 *.pyc
 train_output/
+daimler_sample_images/
+sweeps/
