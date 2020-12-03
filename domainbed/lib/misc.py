@@ -17,6 +17,15 @@ import sklearn.metrics
 import tqdm
 from collections import Counter
 
+
+def brier_score_loss(probs, targets, reduction='mean'):
+    num_classes = probs[0].size()[0]
+    targets = F.one_hot(targets, num_classes=num_classes)
+    loss = (probs - targets).pow(2).sum(1)
+    if reduction == 'mean':
+        loss = loss.mean()
+    return loss
+
 def make_weights_for_balanced_classes(dataset):
     counts = Counter()
     classes = []

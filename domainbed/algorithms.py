@@ -9,6 +9,7 @@ import copy
 import numpy as np
 
 from domainbed import networks
+import domainbed.lib.misc
 from domainbed.lib.misc import random_pairs_of_minibatches
 
 ALGORITHMS = [
@@ -28,11 +29,26 @@ ALGORITHMS = [
     'RSC'
 ]
 
+LOSSES = [
+    'cross_entropy',
+    'brier_score_loss'
+]
+
 def get_algorithm_class(algorithm_name):
     """Return the algorithm class with the given name."""
     if algorithm_name not in globals():
         raise NotImplementedError("Algorithm not found: {}".format(algorithm_name))
     return globals()[algorithm_name]
+
+def get_loss_fn(loss_name):
+    """Return the loss function with the given name."""
+    if loss_name not in LOSSES:
+        raise NotImplementedError("Algorithm not found: {}".format(loss_name))
+    elif loss_name in dir(domainbed.lib.misc):
+        return getattr(domainbed.lib.misc, loss_name)
+    else:
+        return getattr(F, loss_name)
+    
 
 
 class Algorithm(torch.nn.Module):
@@ -177,13 +193,14 @@ class AbstractDANN(Algorithm):
             for i, (x, y) in enumerate(minibatches)
         ])
 
+        disc_loss_fn = get_loss_fn(self.hparams['disc_loss_fn'])
         if self.class_balance:
             y_counts = F.one_hot(all_y).sum(dim=0)
             weights = 1. / (y_counts[all_y] * y_counts.shape[0]).float()
-            disc_loss = F.cross_entropy(disc_out, disc_labels, reduction='none')
+            disc_loss = disc_loss_fn(disc_out, disc_labels, reduction='none')
             disc_loss = (weights * disc_loss).sum()
         else:
-            disc_loss = F.cross_entropy(disc_out, disc_labels)
+            disc_loss = disc_loss_fn(disc_out, disc_labels)
 
         disc_softmax = F.softmax(disc_out, dim=1)
         input_grad = autograd.grad(disc_softmax[:, disc_labels].sum(),
