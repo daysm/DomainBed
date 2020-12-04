@@ -19,10 +19,17 @@ from collections import Counter
 
 
 def brier_score_loss(input, target, reduction='mean'):
+    """
+    Computes the brier score: https://en.wikipedia.org/wiki/Brier_score
+    Parameters
+    - input: logits (batch)
+    - target: true labels (batch)
+    - reduction: reduction to apply to output, default: mean
+    """
     num_classes = input[0].size()[0]
     target = F.one_hot(target, num_classes=num_classes)
     input_softmax = F.softmax(input, dim=1)
-    loss = (input_softmax - target).pow(2).sum(1)
+    loss = (input_softmax - target).pow(2).sum(dim=1)
     if reduction == 'mean':
         loss = loss.mean()
     return loss
