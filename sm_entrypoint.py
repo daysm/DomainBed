@@ -71,6 +71,8 @@ def train():
         for k, v in sorted(train_args.items()):
             if isinstance(v, list):
                 v = ' '.join([str(v_) for v_ in v])
+            elif isinstance(v, str) and not v:
+                v = ''
             elif isinstance(v, str):
                 v = shlex.quote(v)
             command.append(f'--{k} {v}')
