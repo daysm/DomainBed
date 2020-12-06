@@ -31,7 +31,8 @@ ALGORITHMS = [
 
 LOSSES = [
     'cross_entropy',
-    'brier_score_loss'
+    'brier_score_loss',
+    'brier_score_loss_with_logits'
 ]
 
 def get_algorithm_class(algorithm_name):
@@ -43,7 +44,7 @@ def get_algorithm_class(algorithm_name):
 def get_loss_fn(loss_name):
     """Return the loss function with the given name."""
     if loss_name not in LOSSES:
-        raise NotImplementedError("Algorithm not found: {}".format(loss_name))
+        raise NotImplementedError("Loss function not found: {}".format(loss_name))
     elif loss_name in dir(domainbed.lib.misc):
         return getattr(domainbed.lib.misc, loss_name)
     else:

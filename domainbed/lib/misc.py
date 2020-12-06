@@ -17,19 +17,39 @@ import sklearn.metrics
 import tqdm
 from collections import Counter
 
+# targets = torch.tensor([4, 4, 4, 1, 4, 2, 0, 1, 0, 0])
+
+# probs = torch.tensor([[0.14, 0.38, 0.4 , 0.04, 0.05],
+#                [0.55, 0.05, 0.34, 0.04, 0.01],
+#                [0.3 , 0.35, 0.18, 0.09, 0.08],
+#                [0.23, 0.22, 0.04, 0.05, 0.46],
+#                [0.  , 0.15, 0.47, 0.28, 0.09],
+#                [0.23, 0.13, 0.34, 0.27, 0.03],
+#                [0.32, 0.06, 0.59, 0.02, 0.01],
+#                [0.01, 0.19, 0.01, 0.03, 0.75],
+#                [0.27, 0.38, 0.03, 0.12, 0.2 ],
+#                [0.17, 0.45, 0.11, 0.25, 0.01]])
+
+targets = torch.tensor([3, 4, 1])
+
+probs = torch.tensor([[0.0, 0.25, 0.25 , 0.0, 0.5],
+                     [0.0, 0.0, 0.0 , 0.0, 1.0],
+                     [0.0, 0.0, 0.0 , 0.5, 0.5]])
+
+def brier_score_loss_with_logits(input, target, reduction='mean'):
+    return brier_score_loss(F.softmax(input, dim=1), target, reduction=reduction)
 
 def brier_score_loss(input, target, reduction='mean'):
     """
     Computes the brier score: https://en.wikipedia.org/wiki/Brier_score
     Parameters
-    - input: logits (batch)
+    - input: probabilities (batch)
     - target: true labels (batch)
     - reduction: reduction to apply to output, default: mean
     """
     num_classes = input[0].size()[0]
     target = F.one_hot(target, num_classes=num_classes)
-    input_softmax = F.softmax(input, dim=1)
-    loss = (input_softmax - target).pow(2).sum(dim=1)
+    loss = (input - target).pow(2).sum(dim=1)
     if reduction == 'mean':
         loss = loss.mean()
     return loss
