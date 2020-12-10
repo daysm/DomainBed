@@ -17,9 +17,36 @@ import sklearn.metrics
 import tqdm
 from collections import Counter
 
+def expansion_log(input, n=2):
+    """
+    input - (N,C) where C = number of classes
+    n - number of expansions
+    """
+    result = 0
+    for k in range(1, n+1):
+        result += (-1)**(k-1) * (input-1)**k / k
+    return result
+
+def cross_entropy_expanded(input, target, n=2):
+    """
+    input - (N,C) where C = number of classes
+    target - (N) 
+    n - number of expansions
+    """
+    return nll_loss_expanded(F.softmax(input, dim=1), target, n=n)
+
+def nll_loss_expanded(input, target, n=2):
+    """
+    input - (N,C) where C = number of classes
+    target - (N) 
+    n - number of expansions
+    """
+    log_likelihood = -expansion_log(input[range(input.size(0)),target], n=n)
+    loss = log_likelihood.mean()
+    return loss
 
 def brier_score_loss_with_logits(input, target, reduction='mean'):
-    return brier_score_loss(F.softmax(input, dim=1), target, reduction=reduction)
+    return brier_score_loss(F.softmax(input,    ), target, reduction=reduction)
 
 def brier_score_loss(input, target, reduction='mean'):
     """
