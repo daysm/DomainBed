@@ -31,6 +31,7 @@ ALGORITHMS = [
 
 LOSSES = [
     'cross_entropy',
+    'cross_entropy_approx'
     'brier_score_loss',
     'brier_score_loss_with_logits'
 ]
