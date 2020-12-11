@@ -33,21 +33,11 @@ def cross_entropy_approx(input, target, order=2, reduction='mean'):
     target - (N) 
     order - number of expansions
     """
-    return nll_loss_approx(F.softmax(input, dim=1), target, order=order, reduction=reduction)
-
-def nll_loss_approx(input, target, order=2, reduction='mean'):
-    """
-    input - (N,C) where C = number of classes
-    target - (N) 
-    order - number of expansions
-    """
-    loss = -log_approx(input[range(input.size(0)), target], order=order)
-    if reduction == 'mean':
-        loss = loss.mean()
-    return loss
+    # TODO: Use 
+    return F.nll_loss(log_approx(F.softmax(input, dim=1), order=order), target, reduction=reduction)
 
 def brier_score_loss_with_logits(input, target, reduction='mean'):
-    return brier_score_loss(F.softmax(input,    ), target, reduction=reduction)
+    return brier_score_loss(F.softmax(input, dim=1), target, reduction=reduction)
 
 def brier_score_loss(input, target, reduction='mean'):
     """
