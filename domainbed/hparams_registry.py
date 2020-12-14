@@ -44,6 +44,7 @@ def _hparams(algorithm, dataset, random_seed):
         _hparam('mlp_depth', 3, lambda r: int(r.choice([3, 4, 5])))
         _hparam('mlp_dropout', 0., lambda r: r.choice([0., 0.1, 0.5]))
         _hparam('disc_loss_fn', 'cross_entropy', lambda r: r.choice(['cross_entropy', 'mse']))
+        _hparam('ce_approx_order', 2, lambda r: r.choice([2, 3, 5, 10]))
         
 
     elif algorithm == "RSC":

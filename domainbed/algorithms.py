@@ -10,6 +10,7 @@ import numpy as np
 
 from domainbed import networks
 import domainbed.lib.misc
+import domainbed.loss_functions
 from domainbed.lib.misc import random_pairs_of_minibatches
 
 ALGORITHMS = [
@@ -29,29 +30,12 @@ ALGORITHMS = [
     'RSC'
 ]
 
-LOSSES = [
-    'cross_entropy',
-    'cross_entropy_approx'
-    'brier_score_loss',
-    'brier_score_loss_with_logits'
-]
-
 def get_algorithm_class(algorithm_name):
     """Return the algorithm class with the given name."""
     if algorithm_name not in globals():
         raise NotImplementedError("Algorithm not found: {}".format(algorithm_name))
     return globals()[algorithm_name]
-
-def get_loss_fn(loss_name):
-    """Return the loss function with the given name."""
-    if loss_name not in LOSSES:
-        raise NotImplementedError("Loss function not found: {}".format(loss_name))
-    elif loss_name in dir(domainbed.lib.misc):
-        return getattr(domainbed.lib.misc, loss_name)
-    else:
-        return getattr(F, loss_name)
     
-
 
 class Algorithm(torch.nn.Module):
     """
@@ -195,7 +179,8 @@ class AbstractDANN(Algorithm):
             for i, (x, y) in enumerate(minibatches)
         ])
 
-        disc_loss_fn = get_loss_fn(self.hparams['disc_loss_fn'])
+        domainbed.loss_functions.CE_APPROX_ORDER = self.hparams['ce_approx_order']
+        disc_loss_fn = domainbed.loss_functions.get_loss_fn(self.hparams['disc_loss_fn'])
         if self.class_balance:
             y_counts = F.one_hot(all_y).sum(dim=0)
             weights = 1. / (y_counts[all_y] * y_counts.shape[0]).float()
