@@ -262,6 +262,14 @@ class Daimler(MultipleEnvironmentImageFolder):
         self.dir = os.path.join(root, "Daimler/")
         super().__init__(self.dir, test_envs, hparams['data_augmentation'], hparams)
 
+class DaimlerV2(MultipleEnvironmentImageFolder):
+    CHECKPOINT_FREQ = 300
+    ENVIRONMENTS = ["dealership", "synthetic", "used"]
+    CLASS_NAMES = ["CLA Shooting Brake", "GLA", "GLE", "A-Class", "C-Class", "C-Class Coupé", "E-Class", "B-Class", "GLC Coupé", "GLC"]
+    def __init__(self, root, test_envs, hparams):
+        self.dir = os.path.join(root, "DaimlerV2/")
+        super().__init__(self.dir, test_envs, hparams['data_augmentation'], hparams)
+
 class DaimlerDropOne(Daimler):
     def __init__(self, root, test_envs, hparams):
         self.dir = os.path.join(root, "DaimlerDrop1/")
