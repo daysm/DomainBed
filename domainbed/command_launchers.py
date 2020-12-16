@@ -21,7 +21,7 @@ def sagemaker_launcher(all_train_args, local=False):
     remote_output_dir = 's3://sagemaker-us-east-2-302710561802/d073679/runs/'
     output_dir = local_output_dir if local else remote_output_dir
     
-    local_instance_type = 'local'
+    local_instance_type = 'local_gpu'
     remote_instance_type = 'ml.g4dn.2xlarge'
     instance_type = local_instance_type if local else remote_instance_type
 
