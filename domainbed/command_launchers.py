@@ -37,7 +37,7 @@ def sagemaker_launcher(all_train_args, local=False):
         remote_data_uri = 's3://sagemaker-us-east-2-302710561802/d073679/data/DaimlerV2/'
         local_data_uri = '../data/DaimlerV2/'
         data_uri = local_data_uri if local else remote_data_uri
-        estimator.fit({'DaimlerV2': data_uri}, wait=False)
+        estimator.fit({'DaimlerV2': data_uri}, wait=True if local else False)
 
 
 def sagemaker_local_launcher(all_train_args):
