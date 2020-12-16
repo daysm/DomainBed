@@ -81,7 +81,7 @@ class Job:
             shutil.rmtree(job.output_dir)
         print(f'Deleted {len(jobs)} jobs!')
 
-test_envs = [0]
+test_env = 0
 def make_args_list(n_trials, dataset_names, algorithms, n_hparams, steps,
     data_dir, hparams):
     args_list = []
@@ -92,12 +92,12 @@ def make_args_list(n_trials, dataset_names, algorithms, n_hparams, steps,
                     train_args = {}
                     train_args['dataset'] = dataset
                     train_args['algorithm'] = algorithm
-                    train_args['test_envs'] = test_envs
+                    train_args['test_envs'] = test_env
                     train_args['hparams_seed'] = hparams_seed
                     train_args['data_dir'] = data_dir
                     train_args['trial_seed'] = trial_seed
                     train_args['seed'] = misc.seed_hash(dataset,
-                        algorithm, test_envs, hparams_seed, trial_seed)
+                        algorithm, test_env, hparams_seed, trial_seed)
                     if steps is not None:
                         train_args['steps'] = steps
                     if hparams is not None:
