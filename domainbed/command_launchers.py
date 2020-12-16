@@ -12,7 +12,7 @@ from sagemaker.estimator import Estimator
 
 def sagemaker_launcher(all_train_args, local=False):
     """Launch commands on SageMaker."""
-    # role = sagemaker.get_execution_role()
+    role = sagemaker.get_execution_role()
     local_image_uri = 'domainbed'
     remote_image_uri = '302710561802.dkr.ecr.us-east-2.amazonaws.com/domainbed'
     image_uri = local_image_uri if local else remote_image_uri
@@ -29,7 +29,7 @@ def sagemaker_launcher(all_train_args, local=False):
     for train_args in all_train_args:       
         estimator = Estimator(image_uri=image_uri,
                               output_dir=output_dir,
-                              role=None,
+                              role=role,
                               instance_count=1,
                               instance_type=instance_type,
                               hyperparameters=train_args)
