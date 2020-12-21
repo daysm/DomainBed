@@ -111,6 +111,8 @@ def accuracy(network, loader, weights, device):
     correct = 0
     total = 0
     weights_offset = 0
+    confusion_matrix = []
+    classification_report = {}
 
     network.eval()
     with torch.no_grad():
@@ -127,11 +129,19 @@ def accuracy(network, loader, weights, device):
             if p.size(1) == 1:
                 correct += (p.gt(0).eq(y).float() * batch_weights).sum().item()
             else:
-                correct += (p.argmax(1).eq(y).float() * batch_weights).sum().item()
+                y_pred = p.argmax(1)
+                correct += (y_pred.eq(y).float() * batch_weights).sum().item()
+                confusion_matrix = sklearn.metrics.confusion_matrix(y, y_pred).tolist()
+                classification_report = sklearn.metrics.classification_report(y, y_pred, zero_division=0, output_dict=True)
             total += batch_weights.sum().item()
     network.train()
 
-    return correct / total
+    return_dict = {
+        'accuracy': correct / total,
+        'confusion_matrix': confusion_matrix,
+        'classification_report': classification_report
+    }
+    return return_dict
 
 def report(network, loader, device):
     all_y_true = torch.empty(0)

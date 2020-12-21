@@ -212,10 +212,14 @@ if __name__ == "__main__":
             if not args.skip_acc_calc:
                 evals = zip(eval_loader_names, eval_loaders, eval_weights)
                 for name, loader, weights in evals:
-                    acc = misc.accuracy(algorithm, loader, weights, device)
-                    results[name+'_acc'] = acc
+                    dict = misc.accuracy(algorithm, loader, weights, device)
+                    results[name+'_acc'] = dict['accuracy']
+                    results[name+'_cm'] = dict['confusion_matrix']
+                    results[name+'_cr'] = dict['classification_report']
 
+            IGNORE_SUFFIXES = ['cm', 'cr']
             results_keys = sorted(results.keys())
+            results_keys = [k for k in results_keys if k[-2:] not in IGNORE_SUFFIXES]
             if results_keys != last_results_keys:
                 misc.print_row(results_keys, colwidth=12)
                 last_results_keys = results_keys
@@ -229,6 +233,12 @@ if __name__ == "__main__":
                     results[name+'_confusion_matrix'] = report_dict["confusion_matrix"]
                     results[name+'_classification_report'] = report_dict["classification_report"]
                 
+
+            results.update({
+                'hparams': hparams,
+                'args': vars(args)    
+            })
+
             epochs_path = os.path.join(args.output_dir, 'results.jsonl')
             with open(epochs_path, 'a') as f:
                 f.write(json.dumps(results, sort_keys=True) + "\n")
@@ -238,10 +248,6 @@ if __name__ == "__main__":
 
             checkpoint_vals = collections.defaultdict(lambda: [])
 
-            results.update({
-                'hparams': hparams,
-                'args': vars(args)    
-            })
 
 
     if not args.skip_model_save:
