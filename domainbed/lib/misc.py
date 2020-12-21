@@ -131,7 +131,7 @@ def accuracy(network, loader, weights, device):
             else:
                 y_pred = p.argmax(1)
                 correct += (y_pred.eq(y).float() * batch_weights).sum().item()
-                confusion_matrix = sklearn.metrics.confusion_matrix(y, y_pred).tolist()
+                confusion_matrix = sklearn.metrics.confusion_matrix(y.cpu(), y_pred.cpu()).tolist()
                 classification_report = sklearn.metrics.classification_report(y, y_pred, zero_division=0, output_dict=True)
             total += batch_weights.sum().item()
     network.train()
