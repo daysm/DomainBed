@@ -96,6 +96,47 @@ class ResNet(torch.nn.Module):
             if isinstance(m, nn.BatchNorm2d):
                 m.eval()
 
+class MobileNet(torch.nn.Module):
+    """MobileNet with the softmax chopped off and the batchnorm frozen"""
+    def __init__(self, input_shape, hparams):
+        super(MobileNet, self).__init__()
+        self.network = torchvision.models.resnet18(pretrained=True)
+        self.n_outputs = 1000
+
+        # adapt number of channels
+        nc = input_shape[0]
+        if nc != 3:
+            tmp = self.network.features[0][0].weight.data.clone()
+
+            self.network.features[0][0] = nn.Conv2d(
+                nc, 64, kernel_size=(3, 3),
+                stride=(2, 2), padding=(1, 1), bias=False)
+
+            for i in range(nc):
+                self.network.features[0][0].weight.data[:, i, :, :] = tmp[:, i % 3, :, :]
+
+        self.network.classifier = Identity()
+
+        self.freeze_bn()
+        self.hparams = hparams
+        self.dropout = nn.Dropout(hparams['resnet_dropout'])
+
+    def forward(self, x):
+        """Encode x into a feature vector of size n_outputs."""
+        return self.dropout(self.network(x))
+
+    def train(self, mode=True):
+        """
+        Override the default train() to freeze the BN parameters
+        """
+        super().train(mode)
+        self.freeze_bn()
+
+    def freeze_bn(self):
+        for m in self.network.modules():
+            if isinstance(m, nn.BatchNorm2d):
+                m.eval()
+
 class MNIST_CNN(nn.Module):
     """
     Hand-tuned architecture for MNIST.
@@ -169,6 +210,8 @@ def Featurizer(input_shape, hparams):
         return MNIST_CNN(input_shape)
     elif input_shape[1:3] == (32, 32):
         return wide_resnet.Wide_ResNet(input_shape, 16, 2, 0.)
+    elif input_shape[1:3] == (224, 224) and hparams['mobilenet']:
+        return MobileNet(input_shape, hparams)
     elif input_shape[1:3] == (224, 224):
         return ResNet(input_shape, hparams)
     else:
